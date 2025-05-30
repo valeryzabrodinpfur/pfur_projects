@@ -1,115 +1,77 @@
 import random
 
-class Card:
-    def __init__(self, suit, rank):
-        self.suit = suit
-        self.rank = rank
-        self.value = self._get_value()
-    
-    def _get_value(self):
-        if self.rank in ['J', 'Q', 'K']:
-            return 10
-        elif self.rank == 'A':
-            return 11
-        return int(self.rank)
-    
-    def __str__(self):
-        return f"{self.rank}{self.suit}"
+def draw_card():
+    # Карты от 2 до 11 (11 — туз)
+    return random.randint(2, 11)
 
-class Deck:
-    def __init__(self):
-        self.cards = []
-        self.build()
-    
-    def build(self):
-        suits = ['♠', '♥', '♦', '♣']
-        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-        self.cards = [Card(suit, rank) for suit in suits for rank in ranks]
-        random.shuffle(self.cards)
-    
-    def deal(self):
-        return self.cards.pop()
+def print_status(player_cards, dealer_cards, hide_dealer=True):
+    print(f"\nВаши карты: {player_cards} (сумма: {sum(player_cards)})")
+    if hide_dealer:
+        print(f"Карта дилера: [{dealer_cards[0]}, ?]")
+    else:
+        print(f"Карты дилера: {dealer_cards} (сумма: {sum(dealer_cards)})")
 
-class Hand:
-    def __init__(self):
-        self.cards = []
-        self.value = 0
-    
-    def add_card(self, card):
-        self.cards.append(card)
-        self._update_value()
-    
-    def _update_value(self):
-        self.value = sum(card.value for card in self.cards)
-        aces = sum(1 for card in self.cards if card.rank == 'A')
-        
-        while self.value > 21 and aces:
-            self.value -= 10
-            aces -= 1
-    
-    def __str__(self):
-        return ' '.join(str(card) for card in self.cards)
-
-def play_blackjack():
-    print("♠♥♦♣ Добро пожаловать в Blackjack! ♠♥♦♣")
-    print("Правила: Наберите 21 очко или ближе к нему, чем дилер.\n")
-    
+def player_turn(player_cards, dealer_cards):
     while True:
-        deck = Deck()
-        player = Hand()
-        dealer = Hand()
-        
-        # Раздача карт
-        player.add_card(deck.deal())
-        dealer.add_card(deck.deal())
-        player.add_card(deck.deal())
-        dealer.add_card(deck.deal())
-        
-        # Проверка блекджека
-        if player.value == 21:
-            print("Блекджек! Вы выиграли!")
-            continue
-            
-        # Ход игрока
-        while player.value < 21:
-            print(f"\nВаши карты: {player} ({player.value})")
-            print(f"Карта дилера: {dealer.cards[0]} и ?")
-            
-            choice = input("Берём карту? (д/н): ").lower()
-            if choice == 'д':
-                player.add_card(deck.deal())
-            elif choice == 'н':
-                break
-            else:
-                print("Некорректный ввод! Введите 'д' или 'н'")
-        
-        # Ход дилера
-        if player.value <= 21:
-            print(f"\nКарты дилера: {dealer} ({dealer.value})")
-            while dealer.value < 17:
-                dealer.add_card(deck.deal())
-                print(f"Дилер берёт: {dealer.cards[-1]}")
-        
-        # Определение победителя
-        print("\nРезультат:")
-        print(f"Ваши карты: {player} ({player.value})")
-        print(f"Карты дилера: {dealer} ({dealer.value})")
-        
-        if player.value > 21:
-            print("Перебор! Вы проиграли.")
-        elif dealer.value > 21:
-            print("Дилер перебрал! Вы выиграли!")
-        elif player.value > dealer.value:
-            print("Вы выиграли!")
-        elif dealer.value > player.value:
-            print("Дилер выиграл.")
+        print_status(player_cards, dealer_cards)
+        choice = input("Взять карту (в) или остановиться (о)? ").strip().lower()
+        if choice == 'в':
+            card = draw_card()
+            player_cards.append(card)
+            print(f"Вы взяли карту: {card}")
+            if sum(player_cards) > 21:
+                print_status(player_cards, dealer_cards)
+                print("Перебор! Вы проиграли.")
+                return False
+        elif choice == 'о':
+            return True
         else:
-            print("Ничья!")
-        
-        # Новая игра
-        if input("\nСыграем ещё? (д/н): ").lower() != 'д':
-            print("Спасибо за игру!")
-            break
+            print("Введите 'в' или 'о'.")
+
+def dealer_turn(dealer_cards):
+    print("\nХод дилера...")
+    while sum(dealer_cards) < 17:
+        card = draw_card()
+        dealer_cards.append(card)
+        print(f"Дилер взял карту: {card} (сумма: {sum(dealer_cards)})")
+        if sum(dealer_cards) > 21:
+            print("У дилера перебор!")
+            return False
+    return True
+
+def determine_winner(player_cards, dealer_cards):
+    player_sum = sum(player_cards)
+    dealer_sum = sum(dealer_cards)
+    print_status(player_cards, dealer_cards, hide_dealer=False)
+    if player_sum > 21:
+        print("Вы проиграли!")
+    elif dealer_sum > 21:
+        print("Дилер проиграл. Вы выиграли!")
+    elif player_sum > dealer_sum:
+        print("Вы выиграли!")
+    elif player_sum < dealer_sum:
+        print("Вы проиграли!")
+    else:
+        print("Ничья!")
+
+def play_game():
+    print("Добро пожаловать в игру '21 очко'!")
+    player_cards = [draw_card(), draw_card()]
+    dealer_cards = [draw_card(), draw_card()]
+    # Ход игрока
+    if player_turn(player_cards, dealer_cards):
+        # Ход дилера
+        if dealer_turn([dealer_cards[0], dealer_cards[1]]):
+            # Определение победителя
+            determine_winner(player_cards, dealer_cards)
+        else:
+            print_status(player_cards, dealer_cards, hide_dealer=False)
+            print("У дилера перебор. Вы выиграли!")
 
 if __name__ == "__main__":
-    play_blackjack()
+    while True:
+        play_game()
+        again = input("\nСыграть ещё раз? (д/н): ").strip().lower()
+        if again != 'д':
+            print("Спасибо за игру!")
+            break
